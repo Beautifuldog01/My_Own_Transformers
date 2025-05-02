@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import os
+from tqdm import tqdm
 from models import Encoder, Decoder
 from config import config
 from optimizer import get_optimizer
@@ -77,7 +78,7 @@ def train(model, optimizer, criterion, train_data):
     - train_data: 训练数据
     """
     model.train()
-    for epoch in range(config.num_epochs):
+    for epoch in tqdm(range(config.num_epochs)):
         total_loss = 0
         for i, (src, tgt) in enumerate(train_data):
             # 创建掩码
@@ -112,13 +113,14 @@ def train(model, optimizer, criterion, train_data):
         )
 
 
-def main():
-    # 打印配置信息
-    print(config)
-
-    # 初始化分词器
-    tokenizer = get_tokenizer()
-
+def get_demo_data(tokenizer):
+    """
+    获取示例训练数据。
+    参数：
+    - tokenizer: 分词器
+    返回：
+    - 示例训练数据列表
+    """
     # 示例训练数据
     train_data = [
         ("Learning is the best reward.", "学习是旅途的意义。"),
@@ -131,6 +133,51 @@ def main():
         (encode_text(src, tokenizer), encode_text(tgt, tokenizer))
         for src, tgt in train_data
     ]
+
+    return train_data
+
+
+def load_data_from_file(file_path, tokenizer):
+    """
+    从文件加载训练数据。
+    参数：
+    - file_path: 文件路径
+    - tokenizer: 分词器
+    返回：
+    - 训练数据列表
+    """
+    train_data = []
+    with open(file_path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                src, tgt = line.split("\t")
+                train_data.append(
+                    (encode_text(src, tokenizer), encode_text(tgt, tokenizer))
+                )
+            except ValueError:
+                print(f"跳过无效行: {line}")
+
+    return train_data
+
+
+def main():
+    # 打印配置信息
+    print(config)
+
+    # 初始化分词器
+    tokenizer = get_tokenizer()
+
+    # 加载训练数据
+    if config.train_file and os.path.exists(config.train_file):
+        print(f"从文件加载训练数据: {config.train_file}")
+        train_data = load_data_from_file(config.train_file, tokenizer)
+    else:
+        print("使用示例训练数据")
+        train_data = get_demo_data(tokenizer)
 
     # 创建模型
     model = Transformer(vocab_size=tokenizer.n_vocab)

@@ -35,12 +35,30 @@ src/
 
 ## Usage
 
-To train the Transformer model, run the `main.py` script. You must provide the path to your training data file using the `--train_file` argument. Other hyperparameters can also be specified via command-line arguments.
+To train the Transformer model, run the `main.py` script. You have two options for training data:
 
-**Example:**
+1. **Using Built-in Demo Data:**
+
+   Simply run the script without specifying a training file - the code will use the built-in example translations:
+
+   ```bash
+   python src/main.py
+   ```
+
+2. **Using Custom Training Data:**
+
+   Specify your training data file with the `--train_file` parameter. The file should contain tab-separated source and target sentences, one pair per line:
+
+   ```bash
+   python src/main.py --train_file path/to/your/train_data.txt
+   ```
+
+You can customize various other aspects of the training process with additional command-line arguments.
+
+**Example with Custom Parameters:**
 
 ```bash
-python src/main.py --train_file path/to/your/train_data.txt --d_model 512 --num_heads 8 --num_layers 6 --batch_size 32 --num_epochs 10 --learning_rate 1.0 --warmup_steps 4000 --save_dir checkpoints
+python src/main.py --d_model 512 --num_heads 8 --num_layers 6 --batch_size 32 --num_epochs 10 --learning_rate 1.0 --warmup_steps 4000 --save_dir checkpoints
 ```
 
 ### Command-Line Arguments
@@ -67,9 +85,11 @@ The following arguments can be used to configure the training process:
 
 **Data Parameters:**
 
-*   `--train_file` (str, **required**): Path to the training data file.
+*   `--train_file` (str, default: None): Path to the training data file. If not provided, built-in demo data will be used.
 *   `--val_file` (str, default: None): Path to the validation data file.
 *   `--max_seq_len` (int, default: 512): Maximum sequence length.
+*   `--use_demo_data` (flag): Explicitly use demo data for training, even if a training file is provided.
+
 
 ## Citation
 

@@ -30,11 +30,12 @@ def get_args():
     parser.add_argument("--log_interval", type=int, default=100, help="日志打印间隔")
 
     # 数据参数
-    parser.add_argument(
-        "--train_file", type=str, required=True, help="训练数据文件路径"
-    )
+    parser.add_argument("--train_file", type=str, default=None, help="训练数据文件路径")
     parser.add_argument("--val_file", type=str, default=None, help="验证数据文件路径")
     parser.add_argument("--max_seq_len", type=int, default=512, help="最大序列长度")
+    parser.add_argument(
+        "--use_demo_data", action="store_true", help="使用示例数据进行训练"
+    )
 
     args = parser.parse_args()
     return args
