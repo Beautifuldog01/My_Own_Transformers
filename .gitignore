@@ -175,3 +175,6 @@ cython_debug/
 
 # VS Code settings
 .vscode/
+
+# checkpoints
+checkpoints/

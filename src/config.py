@@ -22,11 +22,20 @@ class Config:
         self.device = args.device if torch.cuda.is_available() else "cpu"  # 设备选择
         self.save_dir = args.save_dir  # 模型保存目录
         self.log_interval = args.log_interval  # 日志打印间隔
+        self.resume = args.resume
+        self.save_best_only = args.save_best_only
+        self.patience = args.patience
 
         # 数据参数
         self.train_file = args.train_file  # 训练数据文件路径
         self.val_file = args.val_file  # 验证数据文件路径
         self.max_seq_len = args.max_seq_len  # 最大序列长度
+        self.use_demo_data = args.use_demo_data
+
+        # 设置设备
+        if self.device == "cuda" and not torch.cuda.is_available():
+            print("CUDA不可用，使用CPU")
+            self.device = "cpu"
 
     def __str__(self):
         """返回配置的字符串表示"""
@@ -44,10 +53,14 @@ class Config:
         config_str += f"  device: {self.device}\n"
         config_str += f"  save_dir: {self.save_dir}\n"
         config_str += f"  log_interval: {self.log_interval}\n"
+        config_str += f"  resume: {self.resume}\n"
+        config_str += f"  save_best_only: {self.save_best_only}\n"
+        config_str += f"  patience: {self.patience}\n"
         config_str += "\n数据配置:\n"
         config_str += f"  train_file: {self.train_file}\n"
         config_str += f"  val_file: {self.val_file}\n"
         config_str += f"  max_seq_len: {self.max_seq_len}\n"
+        config_str += f"  use_demo_data: {self.use_demo_data}\n"
         return config_str
 
 

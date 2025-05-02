@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import math
+import torch.nn.functional as F
 
 
 # 位置编码模块
@@ -66,65 +67,71 @@ class MultiHeadAttention(nn.Module):
         - dropout: Dropout 概率。
         """
         super().__init__()
-        # 确保 d_model 可以被 num_heads 整除
-        assert d_model % num_heads == 0, "d_model 必须能被 num_heads 整除"
+        assert d_model % num_heads == 0, "d_model must be divisible by num_heads"
 
-        self.d_model = d_model  # 输入特征的维度
-        self.num_heads = num_heads  # 注意力头的数量
-        self.d_k = d_model // num_heads  # 每个头的特征维度
+        self.d_model = d_model
+        self.num_heads = num_heads
+        self.d_k = d_model // num_heads
 
-        # 定义用于生成查询（Q）、键（K）、值（V）的线性变换
-        self.w_q = nn.Linear(d_model, d_model)  # 查询的线性变换
-        self.w_k = nn.Linear(d_model, d_model)  # 键的线性变换
-        self.w_v = nn.Linear(d_model, d_model)  # 值的线性变换
-        self.w_o = nn.Linear(d_model, d_model)  # 多头注意力输出的线性变换
+        self.w_q = nn.Linear(d_model, d_model)
+        self.w_k = nn.Linear(d_model, d_model)
+        self.w_v = nn.Linear(d_model, d_model)
+        self.w_o = nn.Linear(d_model, d_model)
 
-        self.dropout = nn.Dropout(dropout)  # 用于注意力权重的 Dropout
-        self.scale = math.sqrt(self.d_k)  # 缩放因子，用于缩放点积注意力的分数
+        self.dropout = nn.Dropout(dropout)
+        self.scale = torch.sqrt(torch.FloatTensor([self.d_k]))
 
     def forward(self, q, k, v, mask=None):
         """
         前向传播函数。
         参数：
-        - q: 查询张量，形状为 [batch_size, seq_len, d_model]。
-        - k: 键张量，形状为 [batch_size, seq_len, d_model]。
-        - v: 值张量，形状为 [batch_size, seq_len, d_model]。
-        - mask: 掩码张量，用于屏蔽某些位置，形状为 [batch_size, 1, 1, seq_len] 或 [batch_size, 1, seq_len, seq_len]。
+        - q: 查询张量，形状为 [batch_size, seq_len, d_model]
+        - k: 键张量，形状为 [batch_size, seq_len, d_model]
+        - v: 值张量，形状为 [batch_size, seq_len, d_model]
+        - mask: 掩码张量，形状为 [batch_size, 1, seq_len, seq_len] 或 [batch_size, 1, 1, seq_len]
         返回：
-        - 输出张量，形状为 [batch_size, seq_len, d_model]。
+        - 输出张量，形状为 [batch_size, seq_len, d_model]
         """
-        batch_size = q.size(0)  # 获取 batch_size
+        batch_size = q.size(0)
+        device = q.device
 
-        # 对查询、键和值进行线性变换，并调整形状以适配多头注意力
-        # 变换后形状为 [batch_size, seq_len, num_heads, d_k]
+        # 线性变换并分头 [batch_size, num_heads, seq_len, d_k]
         q = self.w_q(q).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
         k = self.w_k(k).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
         v = self.w_v(v).view(batch_size, -1, self.num_heads, self.d_k).transpose(1, 2)
 
-        # 计算缩放点积注意力的分数
-        # scores 的形状为 [batch_size, num_heads, seq_len, seq_len]
-        scores = torch.matmul(q, k.transpose(-2, -1)) / self.scale
+        # 计算注意力分数 [batch_size, num_heads, q_len, k_len]
+        scale = self.scale.to(device)
+        scores = torch.matmul(q, k.transpose(-2, -1)) / scale
 
-        # 如果提供了掩码，则将掩码位置的分数设置为负无穷
+        # 应用掩码
         if mask is not None:
-            scores = scores.masked_fill(mask == 0, float("-inf"))
+            # 确保掩码在正确的设备上
+            mask = mask.to(device)
 
-        # 对分数进行 softmax 操作以计算注意力权重
-        # attn 的形状为 [batch_size, num_heads, seq_len, seq_len]
-        attn = torch.softmax(scores, dim=-1)
-        attn = self.dropout(attn)  # 对注意力权重应用 Dropout
+            # 处理掩码维度 - 确保掩码维度为4
+            if mask.dim() > 4:  # 如果掩码维度大于4，移除多余维度
+                mask = mask.squeeze(2)
 
-        # 使用注意力权重加权值张量
-        # output 的形状为 [batch_size, num_heads, seq_len, d_k]
+            # 扩展掩码到所有头
+            if mask.dim() == 4 and mask.size(1) == 1:
+                mask = mask.expand(-1, self.num_heads, -1, -1)
+
+            # 将掩码应用到分数上
+            scores = scores.masked_fill(mask == 0, -1e9)
+
+        # 计算注意力权重 [batch_size, num_heads, q_len, k_len]
+        attn = F.softmax(scores, dim=-1)
+        attn = self.dropout(attn)
+
+        # 计算输出 [batch_size, num_heads, q_len, d_k]
         output = torch.matmul(attn, v)
 
-        # 将多头的输出拼接回原始形状
-        # 先将维度从 [batch_size, num_heads, seq_len, d_k] 转置为 [batch_size, seq_len, num_heads, d_k]
-        # 然后通过 contiguous() 和 view() 调整为 [batch_size, seq_len, d_model]
+        # 重新排列维度并合并头 [batch_size, q_len, d_model]
         output = output.transpose(1, 2).contiguous().view(batch_size, -1, self.d_model)
+        output = self.w_o(output)
 
-        # 对拼接后的输出应用线性变换
-        return self.w_o(output)
+        return output
 
 
 # 前馈网络模块
@@ -296,6 +303,8 @@ class DecoderLayer(nn.Module):
         x = self.norm1(x + self.dropout(attn_output))  # 残差连接 + 归一化
 
         # 编码器-解码器注意力层
+        # 这里直接使用src_mask，不需要特殊处理
+        # src_mask形状应为 [batch_size, 1, 1, src_len]
         attn_output = self.enc_dec_attn(x, enc_output, enc_output, src_mask)
         x = self.norm2(x + self.dropout(attn_output))  # 残差连接 + 归一化
 

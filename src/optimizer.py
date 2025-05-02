@@ -1,82 +1,129 @@
 import torch
+import torch.optim as optim
 import math
 from torch.optim import Optimizer
 from typing import Optional
 
 
-class TransformerOptimizer(Optimizer):
-    """
-    Transformer优化器，实现了论文中的学习率调度策略。
-    学习率计算公式：lrate = d_model^{-0.5} * min(step_num^{-0.5}, step_num * warmup_steps^{-1.5})
-    """
-
-    def __init__(self, model_size, factor, warmup, optimizer):
+class TransformerOptimizer:
+    def __init__(self, model, model_size, factor=1.0, warmup=4000, optimizer=None):
         """
-        初始化优化器。
+        初始化Transformer优化器。
         参数：
+        - model: 模型参数
         - model_size: 模型维度
-        - factor: 缩放因子
+        - factor: 学习率缩放因子
         - warmup: 预热步数
         - optimizer: 基础优化器
         """
-        self.optimizer = optimizer
-        self._step = 0
-        self.warmup = warmup
-        self.factor = factor
         self.model_size = model_size
-        self._rate = 0
+        self.factor = factor
+        self.warmup = warmup
+        self.step_num = 0
 
-    def step(self, closure: Optional[callable] = None) -> float:
+        if optimizer is None:
+            self.optimizer = optim.Adam(
+                model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9
+            )
+        else:
+            self.optimizer = optimizer
+
+        # 初始化优化器状态
+        self.param_groups = self.optimizer.param_groups
+        self._optimizer_step_pre_hooks = {}
+        self._optimizer_state_dict_pre_hooks = {}
+        self._optimizer_load_state_dict_pre_hooks = {}
+        self._optimizer_state_dict_post_hooks = {}
+        self._optimizer_load_state_dict_post_hooks = {}
+
+    def step(self, closure=None):
         """
-        更新参数和学习率。
+        执行单步优化。
         参数：
-        - closure: 用于重新评估模型并返回损失的闭包
+        - closure: 重新评估模型并返回损失的闭包
         返回：
         - 损失值
         """
-        self._step += 1
-        rate = self.rate()
-        for p in self.optimizer.param_groups:
-            p["lr"] = rate
-        self._rate = rate
-        return self.optimizer.step(closure)
+        # 更新学习率
+        for param_group in self.optimizer.param_groups:
+            param_group["lr"] = self.rate()
 
-    def rate(self, step=None):
+        # 执行步骤
+        self.step_num += 1
+
+        # 如果提供了闭包，调用优化器step方法并返回闭包结果
+        if closure is not None:
+            loss = self.optimizer.step(closure)
+            return loss
+        else:
+            self.optimizer.step()
+            return None
+
+    def rate(self):
         """
-        计算当前步数的学习率。
-        参数：
-        - step: 当前步数，如果为None则使用内部计数器
+        计算当前学习率。
         返回：
         - 学习率
         """
-        if step is None:
-            step = self._step
+        # 在计算前确保step_num不为0
+        step_num = max(1, self.step_num)
         return self.factor * (
             self.model_size ** (-0.5)
-            * min(step ** (-0.5), step * self.warmup ** (-1.5))
+            * min(step_num ** (-0.5), step_num * self.warmup ** (-1.5))
         )
 
     def zero_grad(self, set_to_none=False):
         """
-        清空梯度。
+        清除所有参数的梯度。
         参数：
-        - set_to_none: 是否将梯度设置为None而不是零
+        - set_to_none: 如果为True，将梯度设置为None而不是0
         """
         self.optimizer.zero_grad(set_to_none=set_to_none)
 
+    def state_dict(self):
+        """
+        返回优化器的状态字典。
+        返回：
+        - 状态字典
+        """
+        state_dict = {
+            "step_num": self.step_num,
+            "model_size": self.model_size,
+            "factor": self.factor,
+            "warmup": self.warmup,
+            "optimizer": self.optimizer.state_dict(),
+        }
+        return state_dict
 
-def get_optimizer(model, model_size, factor, warmup, betas=(0.9, 0.98), eps=1e-9):
+    def load_state_dict(self, state_dict):
+        """
+        加载优化器状态。
+        参数：
+        - state_dict: 状态字典
+        """
+        self.step_num = state_dict["step_num"]
+        self.model_size = state_dict["model_size"]
+        self.factor = state_dict["factor"]
+        self.warmup = state_dict["warmup"]
+        self.optimizer.load_state_dict(state_dict["optimizer"])
+
+
+def get_optimizer(model, model_size, factor=2.0, warmup=4000):
     """
-    获取Transformer优化器。
+    创建Transformer优化器。
     参数：
     - model: 模型
     - model_size: 模型维度
-    - factor: 缩放因子
+    - factor: 学习率缩放因子
     - warmup: 预热步数
-    - betas: Adam优化器的beta参数
-    - eps: Adam优化器的epsilon参数
     返回：
-    - Transformer优化器实例
+    - Transformer优化器
     """
-    base = torch.optim.Adam(model.parameters(), betas=betas, eps=eps)
-    return TransformerOptimizer(model_size, factor, warmup, base)
+    optimizer = optim.Adam(model.parameters(), lr=0, betas=(0.9, 0.98), eps=1e-9)
+    return TransformerOptimizer(
+        model=model,
+        model_size=model_size,
+        factor=factor,
+        warmup=warmup,
+        optimizer=optimizer,
+    )

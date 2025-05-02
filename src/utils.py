@@ -6,44 +6,62 @@ import math
 import os
 
 
-def create_padding_mask(seq: torch.Tensor) -> torch.Tensor:
+def create_padding_mask(seq):
     """
     创建填充掩码。
     参数：
-    - seq: 输入序列，形状为 [batch_size, seq_len]
+    - seq: 输入序列
     返回：
-    - 掩码张量，形状为 [batch_size, 1, 1, seq_len]
+    - 填充掩码
     """
-    mask = (seq != 0).unsqueeze(1).unsqueeze(2)
-    return mask
+    # 获取序列的设备
+    device = seq.device
+
+    # 创建掩码
+    mask = (seq == 0).unsqueeze(1).unsqueeze(2)
+    return mask.to(device)
 
 
-def create_look_ahead_mask(size: int) -> torch.Tensor:
+def create_look_ahead_mask(size):
     """
     创建前瞻掩码。
     参数：
     - size: 序列长度
     返回：
-    - 掩码张量，形状为 [size, size]
+    - 前瞻掩码
     """
+    # 创建掩码
     mask = torch.triu(torch.ones(size, size), diagonal=1)
-    return mask == 0
+    return mask.to(torch.bool)
 
 
-def create_masks(
-    src: torch.Tensor, tgt: torch.Tensor
-) -> Tuple[torch.Tensor, torch.Tensor]:
+def create_masks(src, tgt):
     """
     创建源序列和目标序列的掩码。
     参数：
-    - src: 源序列，形状为 [batch_size, src_seq_len]
-    - tgt: 目标序列，形状为 [batch_size, tgt_seq_len]
+    - src: 源序列，形状为 [batch_size, seq_len]
+    - tgt: 目标序列，形状为 [batch_size, seq_len]
     返回：
-    - src_mask: 源序列掩码
-    - tgt_mask: 目标序列掩码
+    - src_mask: 源序列掩码，形状为 [batch_size, 1, 1, seq_len]
+    - tgt_mask: 目标序列掩码，形状为 [batch_size, 1, seq_len, seq_len]
     """
-    src_mask = create_padding_mask(src)
-    tgt_mask = create_padding_mask(tgt) & create_look_ahead_mask(tgt.size(1))
+    # 获取序列的设备
+    device = src.device
+
+    # 创建源序列掩码
+    src_mask = (src == 0).unsqueeze(1).unsqueeze(2)  # [batch_size, 1, 1, seq_len]
+
+    # 创建目标序列掩码
+    tgt_padding_mask = (
+        (tgt == 0).unsqueeze(1).unsqueeze(2)
+    )  # [batch_size, 1, 1, seq_len]
+    tgt_look_ahead_mask = (
+        torch.triu(torch.ones(tgt.size(1), tgt.size(1)), diagonal=1).bool().to(device)
+    )  # [seq_len, seq_len]
+    tgt_mask = tgt_padding_mask | tgt_look_ahead_mask.unsqueeze(
+        0
+    )  # [batch_size, 1, seq_len, seq_len]
+
     return src_mask, tgt_mask
 
 
@@ -65,7 +83,13 @@ def encode_text(text: str, tokenizer: tiktoken.Encoding) -> torch.Tensor:
     返回：
     - token张量，形状为 [1, seq_len]
     """
-    tokens = tokenizer.encode(text)
+    try:
+        # 使用基本方法编码
+        tokens = tokenizer.encode(text)
+    except Exception as e:
+        print(f"编码错误: {e}")
+        # 降级到空编码
+        tokens = [1]  # 使用一个通用token
     return torch.tensor(tokens).unsqueeze(0)
 
 
@@ -80,9 +104,16 @@ def decode_text(tokens: torch.Tensor, tokenizer: tiktoken.Encoding) -> str:
     """
     # 移除0和特殊token
     tokens = tokens.cpu().numpy().tolist()
-    # 移除0和填充token
-    tokens = [t for t in tokens if t > 0]
-    return tokenizer.decode(tokens)
+
+    # 移除0（填充标记）
+    filtered_tokens = [t for t in tokens if t != 0]
+
+    try:
+        # 使用基本方法解码
+        return tokenizer.decode(filtered_tokens)
+    except Exception as e:
+        print(f"解码错误: {e}")
+        return "翻译结果不可用"
 
 
 def calculate_bleu(reference: str, hypothesis: str, max_n: int = 4) -> float:
@@ -168,16 +199,16 @@ def evaluate_translations(references: List[str], hypotheses: List[str]) -> float
 def get_demo_data(
     tokenizer: tiktoken.Encoding,
 ) -> Tuple[
-    List[Tuple[torch.Tensor, torch.Tensor]],
-    List[Tuple[torch.Tensor, torch.Tensor]],
-    List[Tuple[torch.Tensor, torch.Tensor]],
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
+    List[Tuple[str, str]],
 ]:
     """
     获取示例训练、验证和测试数据。
     参数：
     - tokenizer: 分词器
     返回：
-    - 训练数据、验证数据和测试数据的元组
+    - 训练数据、验证数据和测试数据的元组，每个元素是(源文本, 目标文本)的元组
     """
     # 训练数据
     train_data = [
@@ -212,20 +243,6 @@ def get_demo_data(
         ("When in Rome, do as the Romans do.", "入乡随俗。"),
         ("A penny saved is a penny earned.", "省一分就是赚一分。"),
         ("Birds of a feather flock together.", "物以类聚，人以群分。"),
-    ]
-
-    # 将文本转换为token
-    train_data = [
-        (encode_text(src, tokenizer), encode_text(tgt, tokenizer))
-        for src, tgt in train_data
-    ]
-    val_data = [
-        (encode_text(src, tokenizer), encode_text(tgt, tokenizer))
-        for src, tgt in val_data
-    ]
-    test_data = [
-        (encode_text(src, tokenizer), encode_text(tgt, tokenizer))
-        for src, tgt in test_data
     ]
 
     return train_data, val_data, test_data
