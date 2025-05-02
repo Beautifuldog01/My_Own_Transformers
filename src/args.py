@@ -28,6 +28,18 @@ def get_args():
         "--save_dir", type=str, default="checkpoints", help="模型保存目录"
     )
     parser.add_argument("--log_interval", type=int, default=100, help="日志打印间隔")
+    parser.add_argument(
+        "--resume", type=str, default=None, help="从检查点恢复训练，提供检查点文件路径"
+    )
+    parser.add_argument(
+        "--save_best_only", action="store_true", help="只保存表现最好的模型"
+    )
+    parser.add_argument(
+        "--patience",
+        type=int,
+        default=3,
+        help="早停patience，连续多少个评估周期没有改善就停止训练",
+    )
 
     # 数据参数
     parser.add_argument("--train_file", type=str, default=None, help="训练数据文件路径")

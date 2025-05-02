@@ -14,10 +14,10 @@ This repository contains an ongoing implementation of the original Transformer p
 src/
 ├── models.py       # Transformer model implementation (Encoder, Decoder, etc.)
 ├── optimizer.py    # Custom optimizer with learning rate scheduling
-├── utils.py        # Utility functions (masking, tokenization)
+├── utils.py        # Utility functions (masking, tokenization, evaluation)
 ├── config.py       # Configuration management (loads from args)
 ├── args.py         # Command-line argument parsing
-├── main.py         # Main script for training
+├── main.py         # Main script for training and evaluation
 └── data.py         # (Placeholder for data loading/preprocessing)
 ```
 
@@ -35,7 +35,9 @@ src/
 
 ## Usage
 
-To train the Transformer model, run the `main.py` script. You have two options for training data:
+### Training the Model
+
+You have two options for training data:
 
 1. **Using Built-in Demo Data:**
 
@@ -53,17 +55,44 @@ To train the Transformer model, run the `main.py` script. You have two options f
    python src/main.py --train_file path/to/your/train_data.txt
    ```
 
-You can customize various other aspects of the training process with additional command-line arguments.
+### Model Evaluation
 
-**Example with Custom Parameters:**
+The model is evaluated using BLEU score on both training and validation sets after each epoch. You can customize the evaluation process with the following options:
+
+*   `--val_file` (str, default: None): Path to the validation data file.
+*   `--save_best_only` (flag): Save only the best model based on validation BLEU score.
+*   `--patience` (int, default: 5): Number of epochs to wait before early stopping if validation BLEU doesn't improve.
+
+### Resuming Training
+
+You can resume training from a checkpoint using the `--resume` parameter:
 
 ```bash
-python src/main.py --d_model 512 --num_heads 8 --num_layers 6 --batch_size 32 --num_epochs 10 --learning_rate 1.0 --warmup_steps 4000 --save_dir checkpoints
+python src/main.py --resume path/to/checkpoint.pt
+```
+
+### Complete Example
+
+Here's a complete example with all parameters:
+
+```bash
+python src/main.py \
+    --d_model 512 \
+    --num_heads 8 \
+    --num_layers 6 \
+    --batch_size 32 \
+    --num_epochs 10 \
+    --learning_rate 1.0 \
+    --warmup_steps 4000 \
+    --save_dir checkpoints \
+    --train_file data/train.txt \
+    --val_file data/val.txt \
+    --save_best_only \
+    --patience 5 \
+    --resume checkpoints/checkpoint_epoch_5.pt
 ```
 
 ### Command-Line Arguments
-
-The following arguments can be used to configure the training process:
 
 **Model Parameters:**
 
@@ -82,14 +111,25 @@ The following arguments can be used to configure the training process:
 *   `--device` (str, default: "cuda"): Training device ("cuda" or "cpu"). Will default to "cpu" if cuda is not available.
 *   `--save_dir` (str, default: "checkpoints"): Directory to save model checkpoints.
 *   `--log_interval` (int, default: 100): Logging interval (in batches).
+*   `--resume` (str, default: None): Path to checkpoint file to resume training.
+*   `--save_best_only` (flag): Save only the best model based on validation BLEU score.
+*   `--patience` (int, default: 5): Number of epochs to wait before early stopping.
 
 **Data Parameters:**
 
-*   `--train_file` (str, default: None): Path to the training data file. If not provided, built-in demo data will be used.
+*   `--train_file` (str, default: None): Path to the training data file.
 *   `--val_file` (str, default: None): Path to the validation data file.
 *   `--max_seq_len` (int, default: 512): Maximum sequence length.
 *   `--use_demo_data` (flag): Explicitly use demo data for training, even if a training file is provided.
 
+## Features
+
+*   **Custom Optimizer**: Implements the learning rate schedule from the original paper.
+*   **BLEU Evaluation**: Uses character-level BLEU score for translation quality assessment.
+*   **Checkpoint Management**: Save and resume training from checkpoints.
+*   **Early Stopping**: Prevents overfitting by monitoring validation BLEU score.
+*   **Masking**: Implements padding and look-ahead masks for the Transformer.
+*   **Demo Data**: Includes built-in example translations for quick testing.
 
 ## Citation
 
