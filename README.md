@@ -1,6 +1,5 @@
 # My_Own_Transformers
 
-My own implementation of the Transformer model.
 
 This repository contains an implementation of the original Transformer paper ("Attention Is All You Need"). The author will continuously update the code to match the details of the paper.
 
