@@ -26,7 +26,7 @@ class PositionalEncoding(nn.Module):
                     denominator = 10000 ** ((i + 1) / d_model)
                     pe[pos, i + 1] = math.cos(pos / denominator)
 
-        # 添加batch维度 -> [1, max_len, d_model]以统一模型接口
+        # 添加batch维度 -> [1, max_len, d_model]以统一模型接口，最后的x + position_encoding会自动触发广播
         pe = pe.unsqueeze(0)
 
         # 注册为不需要梯度的持久化张量
@@ -39,7 +39,7 @@ class PositionalEncoding(nn.Module):
         position_encoding = self.pe[:, :seq_len]
         # 这里有广播机制，position_encoding 的第一个维度是 1，因此可以扩展为 batch_size，从而与输入张量 x 的形状匹配。
 
-        # 加到输入上
+        # 加到输入上，position_encoding触发广播
         return x + position_encoding
 
 
