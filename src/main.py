@@ -32,7 +32,7 @@ def main():
     print(f"输入文本: {text}")
     print(f"输入tokens: {tokens}")
     print(f"输出形状: {output.shape}")
-    print(f"输出示例: {output[0, 0, :5]}")  # 打印第一个token的前5个维度
+    print(f"第一个token的前128个维度: {output[0, 0, :128]}")
 
 
 if __name__ == "__main__":
