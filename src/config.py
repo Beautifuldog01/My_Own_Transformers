@@ -1,3 +1,6 @@
+import torch
+
+
 class Config:
     # 模型参数
     d_model = 512  # 模型维度
@@ -19,3 +22,4 @@ class Config:
     label_smoothing = 0.1
     beam_size = 4
     max_length = 100
+    device = "cuda" if torch.cuda.is_available() else "cpu"

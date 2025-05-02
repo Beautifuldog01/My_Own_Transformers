@@ -23,6 +23,7 @@ def main():
         num_layers=Config.num_layers,
         d_ff=Config.d_ff,
         dropout=Config.dropout,
+        device=Config.device,
     )
 
     # 前向传播

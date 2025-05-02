@@ -126,8 +126,10 @@ class Encoder(nn.Module):
         d_ff,
         dropout=0.1,
         max_len=5000,
+        device="cpu",
     ):
         super().__init__()
+        self.device = device
         self.embedding = nn.Embedding(vocab_size, d_model)
         self.pos_encoding = PositionalEncoding(d_model, max_len)
         self.layers = nn.ModuleList(
@@ -136,7 +138,15 @@ class Encoder(nn.Module):
         self.norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
 
+        # 将模型移动到指定设备
+        self.to(device)
+
     def forward(self, x, mask=None):
+        # 确保输入在正确的设备上
+        x = x.to(self.device)
+        if mask is not None:
+            mask = mask.to(self.device)
+
         # Embedding and positional encoding
         x = self.embedding(x)
         x = self.pos_encoding(x)
