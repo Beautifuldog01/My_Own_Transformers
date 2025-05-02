@@ -1,43 +1,43 @@
 # My_Own_Transformers
 
-我自己的Transformer模型实现。
+My own implementation of the Transformer model.
 
-本仓库包含对原始Transformer论文（"Attention Is All You Need"）的实现。作者将持续更新代码以匹配论文的细节。
+This repository contains an implementation of the original Transformer paper ("Attention Is All You Need"). The author will continuously update the code to match the details of the paper.
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d" width="50%">
 </div>
 
-## 项目结构
+## Project Structure
 
 ```
 src/
-├── models.py       # Transformer模型实现 (Encoder, Decoder等)
-├── optimizer.py    # 自定义优化器，包含学习率调度
-├── utils.py        # 工具函数 (掩码、分词、评估等)
-├── config.py       # 配置管理 (从args加载)
-├── args.py         # 命令行参数解析
-├── main.py         # 训练和评估的主脚本
-└── data.py         # 数据加载和预处理
+├── models.py       # Transformer model implementation (Encoder, Decoder, etc.)
+├── optimizer.py    # Custom optimizer with learning rate scheduling
+├── utils.py        # Utility functions (masking, tokenization, evaluation, etc.)
+├── config.py       # Configuration management (loaded from args)
+├── args.py         # Command line argument parsing
+├── main.py         # Main script for training and evaluation
+└── data.py         # Data loading and preprocessing
 ```
 
-## 安装
+## Installation
 
-1.  **克隆仓库:**
+1.  **Clone the repository:**
     ```bash
     git clone https://github.com/your-username/My_Own_Transformers.git
     cd My_Own_Transformers
     ```
-2.  **安装依赖:**
+2.  **Install dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-## 使用方法
+## Usage
 
-### 数据准备
+### Data Preparation
 
-训练数据应该是制表符分隔的源语言和目标语言句子对，每行一对。例如：
+Training data should be tab-separated pairs of source and target language sentences, one pair per line. For example:
 
 ```
 Learning is the best reward.    学习是旅途的意义。
@@ -45,54 +45,54 @@ Knowledge is power.    知识就是力量。
 Practice makes perfect.    熟能生巧。
 ```
 
-### 数据加载
+### Data Loading
 
-该项目支持两种数据加载方式：
+The project supports two ways to load data:
 
-1. **使用内置示例数据:** 代码提供了一组英汉翻译对作为示例数据。
-2. **自定义数据文件:** 可以指定自己的翻译数据文件路径。
+1. **Using built-in demo data:** The code provides a set of English-Chinese translation pairs as demo data.
+2. **Custom data files:** You can specify your own translation data file path.
 
-数据加载模块通过`data.py`中的`TranslationDataset`类和`create_dataloader`函数处理数据，支持批处理和填充等操作。
+The data loading module handles data through the `TranslationDataset` class and `create_dataloader` function in `data.py`, supporting batching and padding operations.
 
-### 训练模型
+### Model Training
 
-你有两种选择来训练模型：
+You have two options to train the model:
 
-1. **使用内置示例数据:**
+1. **Using built-in demo data:**
 
-   直接运行脚本，无需指定训练文件 - 代码将使用内置的示例翻译：
+   Run the script directly without specifying a training file - the code will use the built-in demo translations:
 
    ```bash
    python src/main.py --use_demo_data
    ```
 
-2. **使用自定义训练数据:**
+2. **Using custom training data:**
 
-   使用`--train_file`参数指定你的训练数据文件：
+   Specify your training data file with the `--train_file` parameter:
 
    ```bash
    python src/main.py --train_file path/to/your/train_data.txt
    ```
 
-### 模型评估
+### Model Evaluation
 
-模型在每个epoch后使用BLEU分数在训练集和验证集上进行评估。你可以通过以下选项自定义评估过程：
+The model is evaluated using BLEU scores on the training and validation sets after each epoch. You can customize the evaluation process with the following options:
 
-*   `--val_file` (str, default: None): 验证数据文件路径。
-*   `--save_best_only` (flag): 只保存基于验证集BLEU分数的最佳模型。
-*   `--patience` (int, default: 5): 如果验证集BLEU分数没有改善，等待多少个epoch后停止训练。
+*   `--val_file` (str, default: None): Path to the validation data file.
+*   `--save_best_only` (flag): Save only the best model based on validation BLEU score.
+*   `--patience` (int, default: 5): Number of epochs to wait for improvement in validation BLEU score before stopping training.
 
-### 恢复训练
+### Resuming Training
 
-你可以使用`--resume`参数从检查点恢复训练：
+You can resume training from a checkpoint using the `--resume` parameter:
 
 ```bash
 python src/main.py --resume path/to/checkpoint.pt
 ```
 
-### 完整示例
+### Full Example
 
-以下是一个包含所有参数的完整示例：
+Here is a full example with all parameters:
 
 ```bash
 python src/main.py \
@@ -111,102 +111,111 @@ python src/main.py \
     --resume checkpoints/checkpoint_epoch_5.pt
 ```
 
-### 命令行参数
+### Command Line Arguments
 
-**模型参数:**
+**Model Parameters:**
 
-*   `--d_model` (int, default: 512): 模型维度。
-*   `--d_ff` (int, default: 2048): 前馈网络维度。
-*   `--num_heads` (int, default: 8): 注意力头数。
-*   `--num_layers` (int, default: 6): 编码器和解码器层数。
-*   `--dropout` (float, default: 0.1): Dropout率。
+*   `--d_model` (int, default: 512): Model dimension.
+*   `--d_ff` (int, default: 2048): Feedforward network dimension.
+*   `--num_heads` (int, default: 8): Number of attention heads.
+*   `--num_layers` (int, default: 6): Number of encoder and decoder layers.
+*   `--dropout` (float, default: 0.1): Dropout rate.
 
-**训练参数:**
+**Training Parameters:**
 
-*   `--batch_size` (int, default: 32): 批次大小。
-*   `--num_epochs` (int, default: 10): 训练轮数。
-*   `--learning_rate` (float, default: 1.0): 优化器学习率因子。
-*   `--warmup_steps` (int, default: 4000): 学习率预热步数。
-*   `--device` (str, default: "cuda"): 训练设备 ("cuda" 或 "cpu")。如果CUDA不可用，将默认使用"cpu"。
-*   `--save_dir` (str, default: "checkpoints"): 模型保存目录。
-*   `--log_interval` (int, default: 100): 日志打印间隔（以批次为单位）。
-*   `--resume` (str, default: None): 用于恢复训练的检查点文件路径。
-*   `--save_best_only` (flag): 是否只保存最佳模型。
-*   `--patience` (int, default: 5): 早停耐心值。
+*   `--batch_size` (int, default: 32): Batch size.
+*   `--num_epochs` (int, default: 10): Number of training epochs.
+*   `--learning_rate` (float, default: 1.0): Learning rate factor for the optimizer.
+*   `--warmup_steps` (int, default: 4000): Number of warmup steps for learning rate.
+*   `--device` (str, default: "cuda"): Training device ("cuda" or "cpu"). Defaults to "cpu" if CUDA is unavailable.
+*   `--save_dir` (str, default: "checkpoints"): Directory to save models.
+*   `--log_interval` (int, default: 100): Interval for logging (in batches).
+*   `--resume` (str, default: None): Path to checkpoint file for resuming training.
+*   `--save_best_only` (flag): Whether to save only the best model.
+*   `--patience` (int, default: 5): Patience for early stopping.
 
-**数据参数:**
+**Data Parameters:**
 
-*   `--train_file` (str, default: None): 训练数据文件路径。
-*   `--val_file` (str, default: None): 验证数据文件路径。
-*   `--max_seq_len` (int, default: 512): 最大序列长度。
-*   `--use_demo_data` (flag): 是否使用示例数据。
+*   `--train_file` (str, default: None): Path to the training data file.
+*   `--val_file` (str, default: None): Path to the validation data file.
+*   `--max_seq_len` (int, default: 512): Maximum sequence length.
+*   `--use_demo_data` (flag): Whether to use demo data.
 
-## 实现细节
+## Implementation Details
 
-### 多头注意力机制
+### Multi-Head Attention Mechanism
 
-多头注意力机制在`models.py`中的`MultiHeadAttention`类实现，包括：
+The multi-head attention mechanism is implemented in the `MultiHeadAttention` class in `models.py`, including:
 
-1. **自注意力**: 编码器中使用，对输入序列进行自注意力计算。
-2. **掩码自注意力**: 解码器中使用，确保解码时只能看到当前及之前的位置。
-3. **编码器-解码器注意力**: 解码器中使用，将解码器的查询与编码器的键和值进行注意力计算。
+1. **Self-Attention**: Used in the encoder for self-attention computation on the input sequence.
+2. **Masked Self-Attention**: Used in the decoder to ensure that decoding can only see the current and previous positions.
+3. **Encoder-Decoder Attention**: Used in the decoder to compute attention between the decoder's queries and the encoder's keys and values.
 
-掩码处理经过优化，确保在不同的注意力类型中维度正确匹配。
+Masking is optimized to ensure correct dimension matching in different attention types.
 
-### 优化器与学习率调度
+### Optimizer and Learning Rate Scheduling
 
-Transformer使用自定义的学习率调度策略，在`optimizer.py`中实现。学习率计算公式为：
+The Transformer uses a custom learning rate scheduling strategy implemented in `optimizer.py`. The learning rate is calculated as:
 
 ```
 lr = factor * (d_model^(-0.5) * min(step_num^(-0.5), step_num * warmup_steps^(-1.5)))
 ```
 
-这种调度策略在训练初期学习率逐渐增大，之后缓慢减小，帮助模型更好地收敛。
+This scheduling strategy increases the learning rate gradually at the beginning of training and then decreases it slowly, helping the model converge better.
 
-### BLEU评分计算
+### BLEU Score Calculation
 
-使用`utils.py`中的`calculate_bleu`和`evaluate_translations`函数实现BLEU分数计算，以评估翻译质量。为了更好地支持中文，BLEU计算是在字符级别进行的。
+BLEU score calculation is implemented using the `calculate_bleu` and `evaluate_translations` functions in `utils.py` to evaluate translation quality. To better support Chinese, BLEU calculation is performed at the character level.
 
-## 主要特性
+## Key Features
 
-*   **多头注意力**: 完整实现论文中的多头注意力机制，支持自注意力和编码器-解码器注意力。
-*   **位置编码**: 使用正弦和余弦函数实现位置编码，提供序列位置信息。
-*   **残差连接**: 每个子层之后都有残差连接和层归一化，帮助训练深层网络。
-*   **自定义优化器**: 实现原始论文中的学习率调度策略。
-*   **掩码机制**: 实现填充掩码和前瞻掩码，处理变长序列和保证自回归特性。
-*   **BLEU评估**: 使用字符级BLEU分数评估翻译质量。
-*   **检查点管理**: 保存和恢复训练状态，支持断点续训。
-*   **早停机制**: 通过监控验证集BLEU分数防止过拟合。
-*   **数据加载器**: 使用PyTorch的Dataset和DataLoader进行高效的数据加载。
-*   **批处理与填充**: 自动处理变长序列的批处理。
-*   **设备适配**: 自动检测可用设备，支持CPU和CUDA训练。
+*   **Multi-Head Attention**: Complete implementation of the multi-head attention mechanism from the paper, supporting self-attention and encoder-decoder attention.
+*   **Positional Encoding**: Implemented using sine and cosine functions to provide positional information to the sequence.
+*   **Residual Connections**: Each sub-layer is followed by a residual connection and layer normalization to help train deep networks.
+*   **Custom Optimizer**: Implements the learning rate scheduling strategy from the original paper.
+*   **Masking Mechanism**: Implements padding and look-ahead masks to handle variable-length sequences and ensure autoregressive properties.
+*   **BLEU Evaluation**: Uses character-level BLEU scores to evaluate translation quality.
+*   **Checkpoint Management**: Saves and restores training state, supporting resumption of training.
+*   **Early Stopping**: Prevents overfitting by monitoring validation BLEU scores.
+*   **Data Loader**: Efficient data loading using PyTorch's Dataset and DataLoader.
+*   **Batching and Padding**: Automatically handles batching of variable-length sequences.
+*   **Device Adaptation**: Automatically detects available devices, supporting both CPU and CUDA training.
 
-## 最近更新
+## Recent Updates
 
-*   **修复掩码维度问题**: 解决了注意力计算中掩码维度不匹配的问题。
-*   **优化器状态管理**: 完善了优化器的状态保存和加载。
-*   **改进评估逻辑**: 增强了翻译评估过程，添加更详细的调试信息。
-*   **增强数据处理**: 改进了数据加载和预处理流程，更好地处理批处理和填充。
-*   **健壮的错误处理**: 增加了更完善的异常处理，提高代码健壮性。
+*   **Fixed Mask Dimension Issues**: Resolved issues with mask dimension mismatches in attention calculations.
+*   **Optimizer State Management**: Improved saving and loading of optimizer state.
+*   **Improved Evaluation Logic**: Enhanced the translation evaluation process with more detailed debugging information.
+*   **Enhanced Data Processing**: Improved data loading and preprocessing to better handle batching and padding.
+*   **Robust Error Handling**: Added more comprehensive exception handling to improve code robustness.
 
-## 检查点文件
+## Checkpoint Files
 
-检查点文件包含以下信息：
-*   `epoch`: 当前训练轮数
-*   `model_state_dict`: 模型状态字典
-*   `optimizer_state_dict`: 优化器状态字典
-*   `train_bleu`: 训练集BLEU分数
-*   `val_bleu`: 验证集BLEU分数
-*   `best_bleu`: 最佳验证集BLEU分数
+Checkpoint files contain the following information:
+*   `epoch`: Current training epoch
+*   `model_state_dict`: Model state dictionary
+*   `optimizer_state_dict`: Optimizer state dictionary
+*   `train_bleu`: Training set BLEU score
+*   `val_bleu`: Validation set BLEU score
+*   `best_bleu`: Best validation set BLEU score
 
-## 引用
+## Special Token Handling
 
-如果你觉得这个实现有帮助，请考虑引用原始论文：
+In this implementation, special tokens are handled using reserved IDs:
+*   `PAD_ID = 0`: Used for padding sequences to the same length.
+*   `BOS_ID = 1`: Used to indicate the beginning of a sequence.
+*   `EOS_ID = 2`: Used to indicate the end of a sequence.
+
+These IDs are used consistently across tokenization, decoding, masking, and padding processes to ensure the model correctly learns when to start, end, and pad sequences.
+
+## Citation
+
+If you find this implementation helpful, please consider citing the original paper:
 
 ```bibtex
 @article{vaswani2017attention,
   title={Attention is all you need},
-  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {\L}ukasz and Polosukhin, Illia},
+  author={Vaswani, Ashish and Shazeer, Noam and Parmar, Niki and Uszkoreit, Jakob and Jones, Llion and Gomez, Aidan N and Kaiser, {}ukasz and Polosukhin, Illia},
   journal={Advances in neural information processing systems},
   volume={30},
   year={2017}
