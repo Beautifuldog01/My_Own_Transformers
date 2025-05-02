@@ -37,7 +37,7 @@ class PositionalEncoding(nn.Module):
         # 截取与输入序列长度匹配的位置编码
         seq_len = x.size(1)
         position_encoding = self.pe[:, :seq_len]
-        # 这里有广播机制在这里，position_encoding 的第一个维度是 1，因此可以扩展为 batch_size，从而与输入张量 x 的形状匹配。
+        # 这里有广播机制，position_encoding 的第一个维度是 1，因此可以扩展为 batch_size，从而与输入张量 x 的形状匹配。
 
         # 加到输入上
         return x + position_encoding
