@@ -99,7 +99,7 @@ def get_args():
     parser.add_argument(
         "--patience",
         type=int,
-        default=5,
+        default=1000,
         help="早停耐心值",
     )
 

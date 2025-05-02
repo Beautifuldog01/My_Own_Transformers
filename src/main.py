@@ -7,9 +7,7 @@ from config import config
 from optimizer import get_optimizer
 from utils import (
     get_tokenizer,
-    encode_text,
     decode_text,
-    create_masks,
     evaluate_translations,
     get_demo_data,
 )
