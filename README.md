@@ -8,6 +8,43 @@ This repository contains an ongoing implementation of the original Transformer p
   <img src="https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d" width="50%">
 </div>
 
+## Project Structure
+
+```
+src/
+├── models.py       # Transformer model implementation (Encoder, Decoder, etc.)
+├── optimizer.py    # Custom optimizer with learning rate scheduling
+├── utils.py        # Utility functions (masking, tokenization)
+├── config.py       # Configuration management (loads from args)
+├── args.py         # Command-line argument parsing
+├── main.py         # Main script for training
+└── data.py         # (Placeholder for data loading/preprocessing)
+```
+
+## Installation
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/your-username/My_Own_Transformers.git
+    cd My_Own_Transformers
+    ```
+2.  **Install dependencies:** (Assuming a `requirements.txt` file exists or will be created)
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+## Usage
+
+To train the Transformer model, run the `main.py` script. You need to provide the path to your training data file using the `--train_file` argument. Other hyperparameters can also be specified via command-line arguments.
+
+**Example:**
+
+```bash
+python src/main.py --train_file path/to/your/train_data.txt --d_model 512 --num_heads 8 --num_layers 6 --batch_size 32 --num_epochs 10 --learning_rate 1.0 --warmup_steps 4000 --save_dir checkpoints
+```
+
+Check `src/args.py` for a full list of available arguments and their default values.
+
 ## Citation
 
 If you find this implementation helpful, please consider citing the original paper:

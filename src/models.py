@@ -376,6 +376,5 @@ class Decoder(nn.Module):
         # 最后一层归一化
         x = self.norm(x)
 
-        # 线性变换到词汇表大小，然后应用softmax
-        x = self.linear(x)
-        return x
+        # 线性变换到词汇表大小
+        return self.linear(x)
