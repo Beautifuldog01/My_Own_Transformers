@@ -1,9 +1,12 @@
 # My_Own_Transformers
+
 My own and noob implementation of Transformer Model Family.
 
 This repository contains an ongoing implementation of the original Transformer paper ("Attention Is All You Need"). The author will continuously update the code to match the paper's details.
 
-![image](https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d)
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d" width="50%">
+</div>
 
 ## Citation
 
