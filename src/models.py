@@ -4,21 +4,47 @@ import math
 import numpy as np
 
 
+import math
+import torch
+import torch.nn as nn
+
+
 class PositionalEncoding(nn.Module):
     def __init__(self, d_model, max_len=5000):
         super().__init__()
+
+        # 初始化一个全零的位置编码矩阵 [max_len, d_model]
         pe = torch.zeros(max_len, d_model)
-        position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
-        )
-        pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position * div_term)
+
+        # 逐个位置计算
+        for pos in range(max_len):
+            # 逐个维度计算
+            for i in range(0, d_model, 2):
+                # 计算原始公式中的分母项
+                denominator = 10000 ** (i / d_model)
+
+                # 计算正弦项（偶数维度）
+                pe[pos, i] = math.sin(pos / denominator)
+
+                # 处理奇数维度（注意边界检查）
+                if i + 1 < d_model:
+                    denominator = 10000 ** ((i + 1) / d_model)
+                    pe[pos, i + 1] = math.cos(pos / denominator)
+
+        # 添加batch维度 -> [1, max_len, d_model]以统一模型接口
         pe = pe.unsqueeze(0)
+
+        # 注册为不需要梯度的持久化张量
         self.register_buffer("pe", pe)
 
     def forward(self, x):
-        return x + self.pe[:, : x.size(1)]
+        # x的形状：[batch_size, seq_len, d_model]
+        # 截取与输入序列长度匹配的位置编码
+        seq_len = x.size(1)
+        position_encoding = self.pe[:, :seq_len]  # [1, seq_len, d_model]
+
+        # 加到输入上
+        return x + position_encoding
 
 
 class MultiHeadAttention(nn.Module):

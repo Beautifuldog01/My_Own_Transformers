@@ -9,11 +9,11 @@ def main():
     tokenizer = tiktoken.get_encoding("cl100k_base")
 
     # 示例文本
-    text = "这是一个测试句子，用于演示Transformer的encoder部分。"
+    text = "Learning is the best reward."
 
     # 使用分词器编码文本
     tokens = tokenizer.encode(text)
-    tokens = torch.tensor(tokens).unsqueeze(0)  # 添加batch维度
+    tokens = torch.tensor(tokens).unsqueeze(0)  # 添加batch维度以统一接口需要的输入形状
 
     # 创建模型
     encoder = Encoder(
