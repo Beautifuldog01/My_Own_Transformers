@@ -254,3 +254,128 @@ class Encoder(nn.Module):
             x = layer(x, mask)
 
         return self.norm(x)
+
+
+# 解码器层模块
+class DecoderLayer(nn.Module):
+    def __init__(self, d_model, num_heads, d_ff, dropout=0.1):
+        """
+        初始化解码器层模块。
+        参数：
+        - d_model: 输入特征的维度。
+        - num_heads: 注意力头的数量。
+        - d_ff: 前馈网络的隐藏层维度。
+        - dropout: Dropout 概率。
+        """
+        super().__init__()
+        self.masked_self_attn = MultiHeadAttention(
+            d_model, num_heads, dropout
+        )  # 带掩码的多头自注意力
+        self.enc_dec_attn = MultiHeadAttention(
+            d_model, num_heads, dropout
+        )  # 编码器-解码器注意力
+        self.feed_forward = PositionWiseFeedForward(d_model, d_ff, dropout)  # 前馈网络
+        self.norm1 = nn.LayerNorm(d_model)  # 第一层归一化
+        self.norm2 = nn.LayerNorm(d_model)  # 第二层归一化
+        self.norm3 = nn.LayerNorm(d_model)  # 第三层归一化
+        self.dropout = nn.Dropout(dropout)  # Dropout 层
+
+    def forward(self, x, enc_output, src_mask=None, tgt_mask=None):
+        """
+        前向传播函数。
+        参数：
+        - x: 解码器输入张量，形状为 [batch_size, seq_len, d_model]。
+        - enc_output: 编码器输出张量，形状为 [batch_size, seq_len, d_model]。
+        - src_mask: 源序列掩码。
+        - tgt_mask: 目标序列掩码。
+        返回：
+        - 输出张量，形状为 [batch_size, seq_len, d_model]。
+        """
+        # 带掩码的自注意力层
+        attn_output = self.masked_self_attn(x, x, x, tgt_mask)
+        x = self.norm1(x + self.dropout(attn_output))  # 残差连接 + 归一化
+
+        # 编码器-解码器注意力层
+        attn_output = self.enc_dec_attn(x, enc_output, enc_output, src_mask)
+        x = self.norm2(x + self.dropout(attn_output))  # 残差连接 + 归一化
+
+        # 前馈网络层
+        ff_output = self.feed_forward(x)
+        x = self.norm3(x + self.dropout(ff_output))  # 残差连接 + 归一化
+
+        return x
+
+
+# 解码器模块
+class Decoder(nn.Module):
+    def __init__(
+        self,
+        vocab_size,
+        d_model,
+        num_heads,
+        num_layers,
+        d_ff,
+        dropout=0.1,
+        max_len=5000,
+        device="cpu",
+    ):
+        """
+        初始化解码器模块。
+        参数：
+        - vocab_size: 词汇表大小。
+        - d_model: 输入特征的维度。
+        - num_heads: 注意力头的数量。
+        - num_layers: 解码器层的数量。
+        - d_ff: 前馈网络的隐藏层维度。
+        - dropout: Dropout 概率。
+        - max_len: 最大序列长度。
+        - device: 设备（如 "cpu" 或 "cuda"）。
+        """
+        super().__init__()
+        self.device = device  # 设备
+        self.embedding = nn.Embedding(vocab_size, d_model)  # 词嵌入层
+        self.pos_encoding = PositionalEncoding(d_model, max_len)  # 位置编码
+        self.layers = nn.ModuleList(
+            [DecoderLayer(d_model, num_heads, d_ff, dropout) for _ in range(num_layers)]
+        )  # 多个解码器层
+        self.norm = nn.LayerNorm(d_model)  # 最后一层归一化
+        self.dropout = nn.Dropout(dropout)  # Dropout 层
+        self.linear = nn.Linear(d_model, vocab_size)  # 输出线性层
+
+        # 将模型移动到指定设备
+        self.to(device)
+
+    def forward(self, x, enc_output, src_mask=None, tgt_mask=None):
+        """
+        前向传播函数。
+        参数：
+        - x: 解码器输入张量，形状为 [batch_size, seq_len]。
+        - enc_output: 编码器输出张量，形状为 [batch_size, seq_len, d_model]。
+        - src_mask: 源序列掩码。
+        - tgt_mask: 目标序列掩码。
+        返回：
+        - 输出张量，形状为 [batch_size, seq_len, vocab_size]。
+        """
+        # 确保输入在正确的设备上
+        x = x.to(self.device)
+        enc_output = enc_output.to(self.device)
+        if src_mask is not None:
+            src_mask = src_mask.to(self.device)
+        if tgt_mask is not None:
+            tgt_mask = tgt_mask.to(self.device)
+
+        # 词嵌入和位置编码
+        x = self.embedding(x)
+        x = self.pos_encoding(x)
+        x = self.dropout(x)
+
+        # 通过N个解码器层
+        for layer in self.layers:
+            x = layer(x, enc_output, src_mask, tgt_mask)
+
+        # 最后一层归一化
+        x = self.norm(x)
+
+        # 线性变换到词汇表大小，然后应用softmax
+        x = self.linear(x)
+        return x
