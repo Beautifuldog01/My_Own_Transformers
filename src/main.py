@@ -10,6 +10,9 @@ from utils import (
     decode_text,
     evaluate_translations,
     get_demo_data,
+    PAD_ID,
+    BOS_ID,
+    EOS_ID,
 )
 from data import create_dataloader, load_data_from_file
 
@@ -54,6 +57,10 @@ class Transformer(nn.Module):
         """
         self.eval()
         with torch.no_grad():
+            bos_token = BOS_ID
+            eos_token = EOS_ID
+            pad_token = PAD_ID
+
             # 只翻译第一个句子（批次中的第一个）
             single_src = src[0:1]
 
@@ -61,29 +68,29 @@ class Transformer(nn.Module):
             single_src = single_src.to(self.device)
 
             # 创建源序列掩码
-            src_mask = (single_src != 0).unsqueeze(1).unsqueeze(2).to(self.device)
+            src_mask = (
+                (single_src == pad_token).unsqueeze(1).unsqueeze(2).to(self.device)
+            )
 
             # 编码源序列
             enc_output = self.encoder(single_src, src_mask)
 
-            # 初始化目标序列 - 使用一个数字而不是特殊标记
-            tgt = torch.ones(1, 1).long().to(self.device)
+            # 初始化目标序列 - 使用BOS token
+            tgt = torch.tensor([[bos_token]]).long().to(self.device)
 
             # 自回归生成
             for _ in range(max_length):
                 # 创建目标序列掩码
                 tgt_len = tgt.size(1)
 
-                # 创建自回归掩码（防止看到未来tokens）
+                # 创建自回归掩码
                 look_ahead_mask = (
                     torch.triu(torch.ones(tgt_len, tgt_len), diagonal=1)
                     .bool()
                     .to(self.device)
                 )
                 tgt_mask = ~look_ahead_mask  # 反转掩码（1表示注意，0表示忽略）
-                tgt_mask = tgt_mask.unsqueeze(0).unsqueeze(
-                    0
-                )  # [1, 1, tgt_len, tgt_len]
+                tgt_mask = tgt_mask.unsqueeze(0).unsqueeze(0)
 
                 # 解码
                 output = self.decoder(tgt, enc_output, src_mask, tgt_mask)
@@ -91,8 +98,8 @@ class Transformer(nn.Module):
                 # 获取下一个token
                 next_token = output[:, -1].argmax(dim=-1).unsqueeze(1)
 
-                # 如果生成了一个特定的结束标记，停止生成（使用一个罕见的标记作为结束标记）
-                if next_token.item() == 100:  # 选择一个罕见的标记作为结束
+                # 如果生成了EOS token，停止生成
+                if next_token.item() == eos_token:
                     break
 
                 # 将新token添加到目标序列

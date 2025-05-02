@@ -1,7 +1,7 @@
 import os
 import torch
 from typing import List, Tuple
-from utils import encode_text, get_tokenizer
+from utils import encode_text, get_tokenizer, PAD_ID
 
 
 class TranslationDataset(torch.utils.data.Dataset):
@@ -40,20 +40,21 @@ class TranslationDataset(torch.utils.data.Dataset):
         return src_tokens, tgt_tokens
 
 
-def pad_sequence(sequences, padding_value=0):
+def pad_sequence(sequences, tokenizer=None):
     """
     填充序列到相同长度。
     参数：
     - sequences: 序列列表
-    - padding_value: 填充值
+    - tokenizer: 分词器（可选，已弃用）
     返回：
     - 填充后的张量
     """
     max_len = max(seq.size(1) for seq in sequences)
+    pad_token = PAD_ID
     padded_sequences = []
     for seq in sequences:
         if seq.size(1) < max_len:
-            padding = torch.zeros(1, max_len - seq.size(1), dtype=seq.dtype)
+            padding = torch.full((1, max_len - seq.size(1)), pad_token, dtype=seq.dtype)
             padded_seq = torch.cat([seq, padding], dim=1)
         else:
             padded_seq = seq
@@ -84,8 +85,8 @@ def create_dataloader(
         batch_size=batch_size,
         shuffle=shuffle,
         collate_fn=lambda x: (
-            pad_sequence([item[0] for item in x]),
-            pad_sequence([item[1] for item in x]),
+            pad_sequence([item[0] for item in x], tokenizer),
+            pad_sequence([item[1] for item in x], tokenizer),
         ),
     )
     return dataloader

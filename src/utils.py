@@ -5,6 +5,10 @@ import collections
 import math
 import os
 
+PAD_ID = 0
+BOS_ID = 1
+EOS_ID = 2
+
 
 def create_padding_mask(seq):
     """
@@ -45,75 +49,38 @@ def create_masks(src, tgt):
     - src_mask: 源序列掩码，形状为 [batch_size, 1, 1, seq_len]
     - tgt_mask: 目标序列掩码，形状为 [batch_size, 1, seq_len, seq_len]
     """
-    # 获取序列的设备
     device = src.device
-
-    # 创建源序列掩码
-    src_mask = (src == 0).unsqueeze(1).unsqueeze(2)  # [batch_size, 1, 1, seq_len]
-
-    # 创建目标序列掩码
-    tgt_padding_mask = (
-        (tgt == 0).unsqueeze(1).unsqueeze(2)
-    )  # [batch_size, 1, 1, seq_len]
-    tgt_look_ahead_mask = (
-        torch.triu(torch.ones(tgt.size(1), tgt.size(1)), diagonal=1).bool().to(device)
-    )  # [seq_len, seq_len]
-    tgt_mask = tgt_padding_mask | tgt_look_ahead_mask.unsqueeze(
-        0
-    )  # [batch_size, 1, seq_len, seq_len]
-
+    tokenizer = get_tokenizer()
+    src_mask = (src == PAD_ID).unsqueeze(1).unsqueeze(2)
+    tgt_padding_mask = (tgt == PAD_ID).unsqueeze(1).unsqueeze(2)
+    seq_len = tgt.size(1)
+    look_ahead_mask = (
+        torch.triu(torch.ones(seq_len, seq_len), diagonal=1).bool().to(device)
+    )
+    tgt_mask = tgt_padding_mask | look_ahead_mask.unsqueeze(0)
     return src_mask, tgt_mask
 
 
-def get_tokenizer() -> tiktoken.Encoding:
-    """
-    获取分词器。
-    返回：
-    - 分词器实例
-    """
+def get_tokenizer():
     return tiktoken.get_encoding("cl100k_base")
 
 
-def encode_text(text: str, tokenizer: tiktoken.Encoding) -> torch.Tensor:
-    """
-    将文本编码为token。
-    参数：
-    - text: 输入文本
-    - tokenizer: 分词器
-    返回：
-    - token张量，形状为 [1, seq_len]
-    """
-    try:
-        # 使用基本方法编码
-        tokens = tokenizer.encode(text)
-    except Exception as e:
-        print(f"编码错误: {e}")
-        # 降级到空编码
-        tokens = [1]  # 使用一个通用token
+def encode_text(text: str, tokenizer) -> torch.Tensor:
+    tokens = [BOS_ID] + tokenizer.encode(text) + [EOS_ID]
+    max_length = 128
+    if len(tokens) < max_length:
+        tokens += [PAD_ID] * (max_length - len(tokens))
+    else:
+        tokens = tokens[: max_length - 1] + [EOS_ID]
     return torch.tensor(tokens).unsqueeze(0)
 
 
-def decode_text(tokens: torch.Tensor, tokenizer: tiktoken.Encoding) -> str:
-    """
-    将token解码为文本。
-    参数：
-    - tokens: token张量，形状为 [seq_len]
-    - tokenizer: 分词器
-    返回：
-    - 解码后的文本
-    """
-    # 移除0和特殊token
+def decode_text(tokens: torch.Tensor, tokenizer) -> str:
     tokens = tokens.cpu().numpy().tolist()
-
-    # 移除0（填充标记）
-    filtered_tokens = [t for t in tokens if t != 0]
-
-    try:
-        # 使用基本方法解码
-        return tokenizer.decode(filtered_tokens)
-    except Exception as e:
-        print(f"解码错误: {e}")
-        return "翻译结果不可用"
+    if EOS_ID in tokens:
+        tokens = tokens[: tokens.index(EOS_ID)]
+    tokens = [t for t in tokens if t not in [BOS_ID, PAD_ID, EOS_ID]]
+    return tokenizer.decode(tokens)
 
 
 def calculate_bleu(reference: str, hypothesis: str, max_n: int = 4) -> float:
