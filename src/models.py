@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import math
-import numpy as np
 
 
 # 位置编码模块
@@ -250,7 +249,7 @@ class Encoder(nn.Module):
         x = self.pos_encoding(x)
         x = self.dropout(x)
 
-        # 通过多个编码器层
+        # 通过N即num_layers个编码器层，原文设定是6层
         for layer in self.layers:
             x = layer(x, mask)
 

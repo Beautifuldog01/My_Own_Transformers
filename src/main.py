@@ -30,7 +30,7 @@ def main():
     output = encoder(tokens)
 
     print(f"输入文本: {text}")
-    print(f"输入tokens: {tokens}")
+    print(f"文本对应的token ids: {tokens}\n")
     print(f"输出形状: {output.shape}")
     print(f"第一个token的前128个维度: {output[0, 0, :128]}")
 
