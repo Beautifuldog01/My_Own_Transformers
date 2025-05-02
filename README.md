@@ -1,14 +1,14 @@
 # My_Own_Transformers
 
-My own and noob implementation of Transformer Model Family.
+我自己的Transformer模型实现。
 
-This repository contains an ongoing implementation of the original Transformer paper ("Attention Is All You Need"). The author will continuously update the code to match the paper's details.
+本仓库包含对原始Transformer论文（"Attention Is All You Need"）的实现。作者将持续更新代码以匹配论文的细节。
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d" width="50%">
 </div>
 
-## Project Structure
+## 项目结构
 
 ```
 src/
@@ -21,7 +21,7 @@ src/
 └── data.py         # 数据加载和预处理
 ```
 
-## Installation
+## 安装
 
 1.  **克隆仓库:**
     ```bash
@@ -33,7 +33,7 @@ src/
     pip install -r requirements.txt
     ```
 
-## Usage
+## 使用方法
 
 ### 数据准备
 
@@ -45,6 +45,15 @@ Knowledge is power.    知识就是力量。
 Practice makes perfect.    熟能生巧。
 ```
 
+### 数据加载
+
+该项目支持两种数据加载方式：
+
+1. **使用内置示例数据:** 代码提供了一组英汉翻译对作为示例数据。
+2. **自定义数据文件:** 可以指定自己的翻译数据文件路径。
+
+数据加载模块通过`data.py`中的`TranslationDataset`类和`create_dataloader`函数处理数据，支持批处理和填充等操作。
+
 ### 训练模型
 
 你有两种选择来训练模型：
@@ -54,7 +63,7 @@ Practice makes perfect.    熟能生巧。
    直接运行脚本，无需指定训练文件 - 代码将使用内置的示例翻译：
 
    ```bash
-   python src/main.py
+   python src/main.py --use_demo_data
    ```
 
 2. **使用自定义训练数据:**
@@ -132,17 +141,53 @@ python src/main.py \
 *   `--max_seq_len` (int, default: 512): 最大序列长度。
 *   `--use_demo_data` (flag): 是否使用示例数据。
 
-## 特性
+## 实现细节
 
-*   **自定义优化器**: 实现了原始论文中的学习率调度。
+### 多头注意力机制
+
+多头注意力机制在`models.py`中的`MultiHeadAttention`类实现，包括：
+
+1. **自注意力**: 编码器中使用，对输入序列进行自注意力计算。
+2. **掩码自注意力**: 解码器中使用，确保解码时只能看到当前及之前的位置。
+3. **编码器-解码器注意力**: 解码器中使用，将解码器的查询与编码器的键和值进行注意力计算。
+
+掩码处理经过优化，确保在不同的注意力类型中维度正确匹配。
+
+### 优化器与学习率调度
+
+Transformer使用自定义的学习率调度策略，在`optimizer.py`中实现。学习率计算公式为：
+
+```
+lr = factor * (d_model^(-0.5) * min(step_num^(-0.5), step_num * warmup_steps^(-1.5)))
+```
+
+这种调度策略在训练初期学习率逐渐增大，之后缓慢减小，帮助模型更好地收敛。
+
+### BLEU评分计算
+
+使用`utils.py`中的`calculate_bleu`和`evaluate_translations`函数实现BLEU分数计算，以评估翻译质量。为了更好地支持中文，BLEU计算是在字符级别进行的。
+
+## 主要特性
+
+*   **多头注意力**: 完整实现论文中的多头注意力机制，支持自注意力和编码器-解码器注意力。
+*   **位置编码**: 使用正弦和余弦函数实现位置编码，提供序列位置信息。
+*   **残差连接**: 每个子层之后都有残差连接和层归一化，帮助训练深层网络。
+*   **自定义优化器**: 实现原始论文中的学习率调度策略。
+*   **掩码机制**: 实现填充掩码和前瞻掩码，处理变长序列和保证自回归特性。
 *   **BLEU评估**: 使用字符级BLEU分数评估翻译质量。
-*   **检查点管理**: 保存和恢复训练检查点。
+*   **检查点管理**: 保存和恢复训练状态，支持断点续训。
 *   **早停机制**: 通过监控验证集BLEU分数防止过拟合。
-*   **掩码实现**: 实现了Transformer的填充掩码和前瞻掩码。
-*   **示例数据**: 包含内置的示例翻译用于快速测试。
 *   **数据加载器**: 使用PyTorch的Dataset和DataLoader进行高效的数据加载。
-*   **批处理**: 支持批处理和随机打乱。
-*   **序列截断**: 自动处理过长的序列。
+*   **批处理与填充**: 自动处理变长序列的批处理。
+*   **设备适配**: 自动检测可用设备，支持CPU和CUDA训练。
+
+## 最近更新
+
+*   **修复掩码维度问题**: 解决了注意力计算中掩码维度不匹配的问题。
+*   **优化器状态管理**: 完善了优化器的状态保存和加载。
+*   **改进评估逻辑**: 增强了翻译评估过程，添加更详细的调试信息。
+*   **增强数据处理**: 改进了数据加载和预处理流程，更好地处理批处理和填充。
+*   **健壮的错误处理**: 增加了更完善的异常处理，提高代码健壮性。
 
 ## 检查点文件
 
