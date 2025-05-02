@@ -1,7 +1,7 @@
 # My_Own_Transformers
 
 
-This repository contains an implementation of the original Transformer paper ("Attention Is All You Need"). The author will continuously update the code to match the details of the paper.
+This repository contains an implementation of the original Transformer paper ("Attention Is All You Need"). We will continuously update the code to match the details of the paper.
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d" width="50%">
