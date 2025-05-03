@@ -3,6 +3,8 @@
 
 This repository contains an implementation of the original Transformer paper ("Attention Is All You Need"). We will continuously update the code to match the details of the paper.
 
+Also, about this repository, I have a tiny blog about interesting details when reproducing the implementation, you can visit the site by click[2025年还有人在Attention Is All You Need - 嘻嘻福斯的文章 - 知乎](https://zhuanlan.zhihu.com/p/1901912964216358105)
+
 <div align="center">
   <img src="https://github.com/user-attachments/assets/1d549173-450a-484a-af29-47152805800d" width="50%">
 </div>
