@@ -303,6 +303,13 @@ class DecoderLayer(nn.Module):
         # 编码器-解码器注意力层
         # 这里直接使用src_mask，不需要特殊处理
         # src_mask形状应为 [batch_size, 1, 1, src_len]
+        """
+        batch_size:批次大小，每个 batch 有多少个样本。
+        第一个 1:预留给多头（num_heads），有时初始 mask 只做一份，后续会扩展到所有头。
+        第二个 1:预留给 query 序列长度（q_len），有时也可以是实际的 query 长度。
+        src_len:源序列长度（即 key/value 的长度）。
+        所以 [batch_size, 1, 1, src_len] 其实是为了后续可以很方便地通过 expand 或 broadcast，适配多头和不同 query 长度的注意力分数矩阵。
+        """
         attn_output = self.enc_dec_attn(x, enc_output, enc_output, src_mask)
         x = self.norm2(x + self.dropout(attn_output))  # 残差连接 + 归一化
 
