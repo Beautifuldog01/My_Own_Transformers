@@ -90,6 +90,7 @@ class Transformer(nn.Module):
                     .to(self.device)
                 )
                 tgt_mask = ~look_ahead_mask  # 反转掩码（1表示注意，0表示忽略）
+                # print(f"tgt_mask: \n{tgt_mask}")
                 tgt_mask = tgt_mask.unsqueeze(0).unsqueeze(0)
 
                 # 解码

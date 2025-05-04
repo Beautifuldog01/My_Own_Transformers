@@ -148,7 +148,7 @@ class PositionWiseFeedForward(nn.Module):
         self.w_1 = nn.Linear(d_model, d_ff)  # 第一层线性变换
         self.w_2 = nn.Linear(d_ff, d_model)  # 第二层线性变换
         self.dropout = nn.Dropout(dropout)  # Dropout 层
-        self.activation = nn.GELU()  # 激活函数
+        self.activation = nn.ReLU()  # 激活函数
 
     def forward(self, x):
         """
@@ -275,12 +275,10 @@ class DecoderLayer(nn.Module):
         - dropout: Dropout 概率。
         """
         super().__init__()
-        self.masked_self_attn = MultiHeadAttention(
-            d_model, num_heads, dropout
-        )  # 带掩码的多头自注意力
-        self.enc_dec_attn = MultiHeadAttention(
-            d_model, num_heads, dropout
-        )  # 编码器-解码器注意力
+        self.masked_self_attn = MultiHeadAttention(d_model, num_heads, dropout)
+        # 带掩码的多头自注意力
+        self.enc_dec_attn = MultiHeadAttention(d_model, num_heads, dropout)
+        # 编码器-解码器注意力
         self.feed_forward = PositionWiseFeedForward(d_model, d_ff, dropout)  # 前馈网络
         self.norm1 = nn.LayerNorm(d_model)  # 第一层归一化
         self.norm2 = nn.LayerNorm(d_model)  # 第二层归一化
