@@ -178,3 +178,4 @@ cython_debug/
 
 # checkpoints
 checkpoints/
+playground.ipynb

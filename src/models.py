@@ -117,7 +117,7 @@ class MultiHeadAttention(nn.Module):
             if mask.dim() == 4 and mask.size(1) == 1:
                 mask = mask.expand(-1, self.num_heads, -1, -1)
 
-            # 将掩码应用到分数上
+            # 将掩码应用到分数上，这里其实就是负无穷过softmax了
             scores = scores.masked_fill(mask == 0, -1e9)
 
         # 计算注意力权重 [batch_size, num_heads, q_len, k_len]
